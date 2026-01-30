@@ -14,17 +14,7 @@
 ## 🗺 보드 인덱스 맵 (Index Mapping)
 체스판의 좌표는 다음과 같이 1차원 배열 인덱스(0-63)로 관리됩니다.
 
-  [File]  a   b   c   d   e   f   g   h
-  [Rank]  --------------------------------
-    8    | 56  57  58  59  60  61  62  63 |
-    7    | 48  49  50  51  52  53  54  55 |
-    6    | 40  41  42  43  44  45  46  47 |
-    5    | 32  33  34  35  36  37  38  39 |
-    4    | 24  25  26  27  28  29  30  31 |
-    3    | 16  17  18  19  20  21  22  23 |
-    2    |  8   9  10  11  12  13  14  15 |
-    1    |  0   1   2   3   4   5   6   7 |
-          --------------------------------
+  <table> <thead> <tr> <th align="center">Rank \ File</th> <th align="center">a</th><th align="center">b</th><th align="center">c</th><th align="center">d</th> <th align="center">e</th><th align="center">f</th><th align="center">g</th><th align="center">h</th> </tr> </thead> <tbody> <tr><td align="center"><b>8</b></td><td>56</td><td>57</td><td>58</td><td>59</td><td>60</td><td>61</td><td>62</td><td>63</td></tr> <tr><td align="center"><b>7</b></td><td>48</td><td>49</td><td>50</td><td>51</td><td>52</td><td>53</td><td>54</td><td>55</td></tr> <tr><td align="center"><b>6</b></td><td>40</td><td>41</td><td>42</td><td>43</td><td>44</td><td>45</td><td>46</td><td>47</td></tr> <tr><td align="center"><b>5</b></td><td>32</td><td>33</td><td>34</td><td>35</td><td>36</td><td>37</td><td>38</td><td>39</td></tr> <tr><td align="center"><b>4</b></td><td>24</td><td>25</td><td>26</td><td>27</td><td>28</td><td>29</td><td>30</td><td>31</td></tr> <tr><td align="center"><b>3</b></td><td>16</td><td>17</td><td>18</td><td>19</td><td>20</td><td>21</td><td>22</td><td>23</td></tr> <tr><td align="center"><b>2</b></td><td>8</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td></tr> <tr><td align="center"><b>1</b></td><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td></tr> </tbody> </table>
 
 
 ## 🚀 주요 기능
