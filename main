@@ -161,6 +161,12 @@ int main() {
       if (move_piece(&chess_board, start_idx, end_idx) == 0) {
          printf("잘못된 수입니다.\n");
       }
+      // legal move라면 board 업데이트
+      else {
+         chess_board.squares[end_idx] = chess_board.squares[start_idx];
+         chess_board.squares[start_idx] = EMPTY;
+         chess_board.turn = chess_board.turn == 0 ? 1 : 0;
+      }
 
       if (is_checkmate(&chess_board)) {
          if (chess_board.turn == 0) {
