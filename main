@@ -137,6 +137,10 @@ int move_piece(Board* b, int start, int end) {
    return 1;
 }
 
+int is_checked(Board* b) {
+
+}
+
 int is_checkmate(Board* b) {
 
 }
