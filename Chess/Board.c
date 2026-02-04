@@ -28,6 +28,9 @@ int pawn_offsets[] = { 7, 9 };
 // Array of knight movements offsets
 int knight_offsets[] = { 15, 17, -15, -17, 6, 10, -6, -10 };
 
+// Array of king movements offsets
+int king_offsets[] = { 1, -1, 7, -7, 8, -8, 9, -9 };
+
 enum {
    EMPTY, W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
    B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING
@@ -216,12 +219,10 @@ static int is_checked_by_pawn(Board* b, int king_pos) {
 
 static int is_checked_by_knight(Board* b, int king_pos) {
    int origin_file = king_pos % 8;
-   int origin_rank = king_pos / 8;
 
    for (int i = 0; i < 8; i++) {
       int target_idx = king_pos + knight_offsets[i];
       int target_file = target_idx % 8;
-      int target_rank = target_idx / 8;
 
       if (target_idx < 0 || target_idx > 63) continue;
 
@@ -229,7 +230,7 @@ static int is_checked_by_knight(Board* b, int king_pos) {
       int piece_color = (piece >= B_PAWN) ? 1 : 0;
 
       // Prevent wrapped cases
-      if (abs(origin_file - target_file) > 2 || abs(origin_rank - target_rank) > 2) continue;
+      if (abs(origin_file - target_file) > 2) continue;
 
       // Enemy piece: Check if it can attack
       int type = (piece > W_KING) ? piece - 6 : piece;
@@ -243,10 +244,20 @@ static int is_checked_by_knight(Board* b, int king_pos) {
 static int is_checked_by_king(Board* b, int king_pos) {
    // Stricktly speaking, king cannot be checked by opponent's king
    // This function is for checking illegal move (case that king moves to square where king can be captured by opponent.)
+   int origin_file = king_pos % 8;
+
    for (int i = 0; i < 8; i++) {
       int target_idx = king_pos + king_offsets[i];
 
       if (target_idx > 63 || target_idx < 0) continue;
+
+      int target_file = target_idx % 8;
+      if (abs(origin_file - target_file) > 1) continue;
+
+      int piece = b->squares[target_idx];
+      int target = (piece > W_KING) ? piece - 6 : piece;
+
+      if (target == W_KING) return 1;
    }
 
    return 0;
