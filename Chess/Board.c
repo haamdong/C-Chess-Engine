@@ -28,9 +28,6 @@ int pawn_offsets[] = { 7, 9 };
 // Array of knight movements offsets
 int knight_offsets[] = { 15, 17, -15, -17, 6, 10, -6, -10 };
 
-// Array of king movements offsets
-int king_offsets[] = { 1, -1, 7, -7, 8, -8, 9, -9 };
-
 enum {
    EMPTY, W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
    B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING
