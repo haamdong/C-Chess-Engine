@@ -299,14 +299,3 @@ int alphabeta(Position *pos, int depth, int alpha, int beta, SearchInfo *info);
 </ul>
 
 <hr>
-
-<div align="center">
-  <p>
-    필요하다면 다음 단계로:
-    <ul style="display:inline-block; text-align:left;">
-      <li>실제 소스 코드에 맞춘 함수 단위 API 문서 생성</li>
-      <li>main.c에 붙여넣을 수 있는 UCI 기본 코드 생성</li>
-      <li>출력 가능한 PDF 문서 제작</li>
-    </ul>
-  </p>
-</div>
