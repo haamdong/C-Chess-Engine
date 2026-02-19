@@ -42,7 +42,7 @@ board.c / move.c / search.c / evaluate.c 파일과 매핑될 수 있도록 작�
 </ul>
 
 <h3>기물 인코딩 예시</h3>
-<p>작은 정수 값을 사용하며, 부호로 색상을 구분합니다.</p>
+<p>작은 정수 값을 사용하며, enum을 사용하여 구분합니다.</p>
 <table>
   <tr><th>기물</th><th>코드</th></tr>
   <tr><td>폰</td><td>1</td></tr>
@@ -52,7 +52,7 @@ board.c / move.c / search.c / evaluate.c 파일과 매핑될 수 있도록 작�
   <tr><td>퀸</td><td>5</td></tr>
   <tr><td>킹</td><td>6</td></tr>
 </table>
-<p>백 기물은 양수, 흑 기물은 음수, 빈 칸은 0으로 표현합니다.</p>
+<p>백 기물은 1-6, 흑 기물은 7-12, 빈 칸은 0으로 표현합니다.</p>
 
 <hr>
 
@@ -69,7 +69,7 @@ board.c / move.c / search.c / evaluate.c 파일과 매핑될 수 있도록 작�
   </li>
   <li><b>합법 수 필터링</b>
     <ul>
-      <li>이동을 적용(make)한 뒤 킹이 체크 상태인지 검사하고, 이후 되돌립니다(unmake).</li>
+      <li>이동을 적용(make)한 뒤 킹이 체크 상태인지 검사하고, 체크 상태라면 이후 되돌립니다(unmake).</li>
       <li>킹이 체크에 노출되는 수는 제거합니다.</li>
     </ul>
   </li>
@@ -77,7 +77,7 @@ board.c / move.c / search.c / evaluate.c 파일과 매핑될 수 있도록 작�
 
 <h3>구현 팁</h3>
 <ul>
-  <li>전체 보드를 복사하지 말고 incremental make/unmake 방식을 사용합니다.</li>
+  <li>전체 보드를 복사하지 않고 incremental make/unmake 방식을 사용합니다.</li>
   <li>캐슬링 권리와 앙파상 칸을 Position 구조체에 포함시킵니다.</li>
   <li>슬라이딩 기물은 방향 벡터를 따라 진행하며 첫 번째 차단 기물에서 중단합니다.</li>
 </ul>
