@@ -114,7 +114,7 @@ gcc -o chess main.c board.c move.c search.c evaluate.c
 </tr>
 <tr><td>Pawn</td><td align="right">100</td></tr>
 <tr><td>Knight</td><td align="right">320</td></tr>
-<tr><td>Bishop</td><td align="right">330</td></tr>
+<tr><td>Bishop</td><td align="right">334</td></tr>
 <tr><td>Rook</td><td align="right">500</td></tr>
 <tr><td>Queen</td><td align="right">900</td></tr>
 <tr><td>King</td><td align="right">20000</td></tr>
