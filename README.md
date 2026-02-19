@@ -1,96 +1,159 @@
-# C-Chess-Engine
+<div align="center">
 
-C-Chess-Engine is a chess engine implemented in pure C.
-This project is designed for educational purposes and demonstrates how a classical chess engine works internally, including board representation, move generation, evaluation, and search algorithms.
+<h1>C-Chess-Engine</h1>
 
-------------------------------------------------------------
+<p>
+A classical chess engine implemented in pure C
+</p>
 
-Overview
+<p>
+<img src="https://img.shields.io/badge/Language-C-blue.svg" />
+<img src="https://img.shields.io/badge/Status-Development-orange.svg" />
+<img src="https://img.shields.io/badge/Type-Chess%20Engine-black.svg" />
+</p>
 
-The engine implements the core logic required to play standard chess on an 8x8 board.
-It calculates legal moves, evaluates positions, and searches for the best move using the Minimax algorithm with Alpha-Beta pruning.
+</div>
 
-------------------------------------------------------------
+<hr>
 
-Main Features
+<h2>About The Project</h2>
 
-- Standard 8x8 chess board representation
-- Legal move generation
-- Material-based evaluation function
-- Minimax search
-- Alpha-Beta pruning
-- Command-line interaction
-- Modular C source structure
+<p>
+C-Chess-Engine is a lightweight, modular chess engine written entirely in C.
+The project focuses on implementing the fundamental components of a classical
+search-based chess engine, including move generation, evaluation, and tree search.
+</p>
 
-------------------------------------------------------------
+<hr>
 
-Engine Architecture
+<h2>Core Architecture</h2>
 
-Board Representation
-Maintains the current game state, stores piece locations, and manages turn information.
+<table>
+<tr>
+<th align="left">Component</th>
+<th align="left">Description</th>
+</tr>
 
-Move Generation
-Generates pseudo-legal moves and filters illegal moves that leave the king in check.
-Handles castling, en passant, and promotion.
+<tr>
+<td><b>Board Representation</b></td>
+<td>Maintains the 8x8 board state, piece encoding, and turn control.</td>
+</tr>
 
-Search
-Implements depth-limited Minimax with Alpha-Beta pruning to efficiently explore the game tree.
+<tr>
+<td><b>Move Generation</b></td>
+<td>Generates pseudo-legal moves and filters illegal moves that expose the king.</td>
+</tr>
 
-Evaluation
-Assigns a numerical score to a board position based on material and optional positional heuristics.
+<tr>
+<td><b>Search</b></td>
+<td>Implements depth-limited Minimax enhanced with Alpha-Beta pruning.</td>
+</tr>
 
-------------------------------------------------------------
+<tr>
+<td><b>Evaluation</b></td>
+<td>Material-based scoring with optional positional heuristics.</td>
+</tr>
 
-Build Instructions
+</table>
 
-Requirements
-- GCC or Clang compiler
+<hr>
 
-Example compilation command
+<h2>Features</h2>
 
+<ul>
+<li>Standard 8x8 chess board implementation</li>
+<li>Legal move validation</li>
+<li>Material evaluation system</li>
+<li>Minimax search algorithm</li>
+<li>Alpha-Beta pruning optimization</li>
+<li>Modular C codebase</li>
+<li>Command-line interface</li>
+</ul>
+
+<hr>
+
+<h2>Build & Run</h2>
+
+<h3>Requirements</h3>
+<ul>
+<li>GCC or Clang compiler</li>
+</ul>
+
+<h3>Compile</h3>
+
+<pre>
 gcc -o chess main.c board.c move.c search.c evaluate.c
+</pre>
 
-Adjust file names if your structure differs.
+<h3>Execute</h3>
 
-Run
-
+<pre>
 ./chess
+</pre>
 
-------------------------------------------------------------
+<hr>
 
-Usage
+<h2>Engine Workflow</h2>
 
-1. Run the executable.
-2. Enter moves in coordinate notation (example: e2e4).
-3. The engine calculates and outputs its best move.
-4. The game continues until checkmate, stalemate, or draw.
+<ol>
+<li>Initialize board state</li>
+<li>Generate legal moves</li>
+<li>Evaluate candidate positions</li>
+<li>Search using Minimax + Alpha-Beta</li>
+<li>Select optimal move</li>
+</ol>
 
-------------------------------------------------------------
+<hr>
 
-Example Project Structure
+<h2>Evaluation Model</h2>
 
+<table>
+<tr>
+<th align="left">Piece</th>
+<th align="right">Value</th>
+</tr>
+<tr><td>Pawn</td><td align="right">100</td></tr>
+<tr><td>Knight</td><td align="right">320</td></tr>
+<tr><td>Bishop</td><td align="right">330</td></tr>
+<tr><td>Rook</td><td align="right">500</td></tr>
+<tr><td>Queen</td><td align="right">900</td></tr>
+<tr><td>King</td><td align="right">20000</td></tr>
+</table>
+
+<hr>
+
+<h2>Planned Enhancements</h2>
+
+<ul>
+<li>UCI protocol support</li>
+<li>Transposition tables (Zobrist hashing)</li>
+<li>Iterative deepening</li>
+<li>Move ordering heuristics</li>
+<li>Quiescence search</li>
+<li>Opening book integration</li>
+<li>Endgame tablebases</li>
+</ul>
+
+<hr>
+
+<h2>Project Structure</h2>
+
+<pre>
 C-Chess-Engine
 │
-├── main.c                Program entry point
-├── board.c / board.h     Board state management
-├── move.c / move.h       Move generation logic
-├── search.c / search.h   Search algorithm
-├── evaluate.c / evaluate.h  Position evaluation
+├── main.c
+├── board.c / board.h
+├── move.c / move.h
+├── search.c / search.h
+├── evaluate.c / evaluate.h
 └── README.md
+</pre>
 
-------------------------------------------------------------
+<hr>
 
-Future Improvements
+<div align="center">
 
-- UCI protocol support
-- Transposition tables with Zobrist hashing
-- Iterative deepening
-- Improved move ordering
-- Quiescence search
-- Opening book
-- Endgame tablebases
-- Performance optimization
+<h3>Educational Chess Engine Project</h3>
+<p>Designed for understanding classical AI search techniques in C.</p>
 
-------------------------------------------------------------
-
-License
+</div>
