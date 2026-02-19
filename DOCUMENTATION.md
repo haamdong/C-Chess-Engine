@@ -25,7 +25,7 @@
 <h2 id="overview">개요</h2>
 <p>
 본 문서는 C-Chess-Engine의 내부 설계와 예상 동작을 설명합니다.
-board.c / move.c / search.c / evaluate.c 파일과 매핑될 수 있도록 작성되었으며,
+Board.c / Engine.c / main.c 파일과 매핑될 수 있도록 작성되었으며,
 리팩토링 시 명세서로도 활용할 수 있습니다.
 </p>
 
@@ -133,19 +133,13 @@ board.c / move.c / search.c / evaluate.c 파일과 매핑될 수 있도록 작�
   </li>
 </ol>
 
-<h3>구현 팁</h3>
-<ul>
-  <li>전체 보드를 복사하지 않고 incremental make/unmake 방식을 사용합니다.</li>
-  <li>캐슬링 권리와 앙파상 칸을 Position 구조체에 포함시킵니다.</li>
-  <li>슬라이딩 기물은 방향 벡터를 따라 진행하며 첫 번째 차단 기물에서 중단합니다.</li>
-</ul>
-
 <hr>
 
 <h2 id="search-algorithm">탐색 알고리즘</h2>
 
-<h3>핵심: Alpha-Beta 기반 Minimax</h3>
+<h3>핵심: Alpha-Beta Pruning 기반 Minimax 알고리즘</h3>
 <p>깊이 제한 minimax가 기본이며, Alpha-Beta 가지치기를 통해 탐색 노드를 크게 줄입니다.</p>
+<p>이 코드에서는 5 또는 6의 depth를 사용하고 있습니다.</p>
 
 <h3>탐색 개선 로드맵</h3>
 <ul>
@@ -182,7 +176,7 @@ board.c / move.c / search.c / evaluate.c 파일과 매핑될 수 있도록 작�
 
 <hr>
 
-<h2 id="engine-flow">엔진 흐름 및 API (상위 수준)</h2>
+<h2 id="engine-flow">엔진 흐름 및 API</h2>
 
 <h3>권장 공개 함수 예시</h3>
 
