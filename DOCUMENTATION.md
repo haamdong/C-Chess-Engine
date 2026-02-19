@@ -1,132 +1,133 @@
 <div align="center">
   <h1>C-Chess-Engine — Documentation</h1>
-  <p>Technical documentation for the C-Chess-Engine project.  
-  This document describes architecture, algorithms, APIs (high-level), and testing tips.</p>
+  <p> C-Chess-Engine 프로젝트를 위한 기술 문서입니다.  
+  본 문서는 아키텍처, 알고리즘, API(상위 수준), 테스트 방법을 설명합니다.</p>
   <hr>
 </div>
 
-<h2 id="toc">Table of Contents</h2>
+<h2 id="toc">목차</h2>
 <ul>
-  <li><a href="#overview">Overview</a></li>
-  <li><a href="#board-representation">Board Representation</a></li>
-  <li><a href="#move-generation">Move Generation</a></li>
-  <li><a href="#search-algorithm">Search Algorithm</a></li>
-  <li><a href="#evaluation-function">Evaluation Function</a></li>
-  <li><a href="#engine-flow">Engine Flow & API</a></li>
-  <li><a href="#performance">Performance Considerations</a></li>
-  <li><a href="#testing-debugging">Testing & Debugging</a></li>
-  <li><a href="#extensions">Extensions & Advanced Features</a></li>
-  <li><a href="#examples">Examples & Pseudocode</a></li>
-  <li><a href="#glossary">Glossary</a></li>
+  <li><a href="#overview">개요</a></li>
+  <li><a href="#board-representation">보드 표현</a></li>
+  <li><a href="#move-generation">이동 생성</a></li>
+  <li><a href="#search-algorithm">탐색 알고리즘</a></li>
+  <li><a href="#evaluation-function">평가 함수</a></li>
+  <li><a href="#engine-flow">엔진 흐름 및 API</a></li>
+  <li><a href="#performance">성능 고려사항</a></li>
+  <li><a href="#testing-debugging">테스트 및 디버깅</a></li>
+  <li><a href="#extensions">확장 기능 및 고급 기능</a></li>
+  <li><a href="#examples">예제 및 의사코드</a></li>
+  <li><a href="#glossary">용어 정리</a></li>
 </ul>
 
 <hr>
 
-<h2 id="overview">Overview</h2>
+<h2 id="overview">개요</h2>
 <p>
-This documentation explains the internal design and expected behavior of the C-Chess-Engine.
-It intentionally describes concepts at a level that allows implementation mapping to existing source files
-(board.c / move.c / search.c / evaluate.c) or to be used as a spec for refactoring.
+본 문서는 C-Chess-Engine의 내부 설계와 예상 동작을 설명합니다.
+board.c / move.c / search.c / evaluate.c 파일과 매핑될 수 있도록 작성되었으며,
+리팩토링 시 명세서로도 활용할 수 있습니다.
 </p>
 
 <hr>
 
-<h2 id="board-representation">Board Representation</h2>
+<h2 id="board-representation">보드 표현</h2>
 
-<h3>Recommended internal models</h3>
-<p>Choose one of the following depending on simplicity vs. performance:</p>
+<h3>권장 내부 모델</h3>
+<p>단순성 또는 성능 목표에 따라 다음 중 하나를 선택할 수 있습니다.</p>
 <ul>
-  <li><b>64-element array (0..63):</b> simple, easy indexing; common for learning projects.</li>
-  <li><b>8x8 2D array:</b> readable, intuitive mapping to ranks/files.</li>
-  <li><b>Bitboards:</b> advanced—fast for move generation and bitwise ops, recommended when optimizing.</li>
+  <li><b>64칸 배열 (0..63):</b> 구현이 단순하며 학습용으로 적합합니다.</li>
+  <li><b>8x8 2차원 배열:</b> 가독성이 좋고 직관적입니다.</li>
+  <li><b>비트보드:</b> 고급 방식으로, 비트 연산을 활용하여 매우 빠른 이동 생성을 지원합니다.</li>
 </ul>
 
-<h3>Piece encoding (example)</h3>
-<p>Use small integer codes for pieces; sign represents color.</p>
+<h3>기물 인코딩 예시</h3>
+<p>작은 정수 값을 사용하며, 부호로 색상을 구분합니다.</p>
 <table>
-  <tr><th>Piece</th><th>Code</th></tr>
-  <tr><td>Pawn</td><td>1</td></tr>
-  <tr><td>Knight</td><td>2</td></tr>
-  <tr><td>Bishop</td><td>3</td></tr>
-  <tr><td>Rook</td><td>4</td></tr>
-  <tr><td>Queen</td><td>5</td></tr>
-  <tr><td>King</td><td>6</td></tr>
+  <tr><th>기물</th><th>코드</th></tr>
+  <tr><td>폰</td><td>1</td></tr>
+  <tr><td>나이트</td><td>2</td></tr>
+  <tr><td>비숍</td><td>3</td></tr>
+  <tr><td>룩</td><td>4</td></tr>
+  <tr><td>퀸</td><td>5</td></tr>
+  <tr><td>킹</td><td>6</td></tr>
 </table>
-<p>White pieces: positive values. Black pieces: negative values. Empty: 0.</p>
+<p>백 기물은 양수, 흑 기물은 음수, 빈 칸은 0으로 표현합니다.</p>
 
 <hr>
 
-<h2 id="move-generation">Move Generation</h2>
+<h2 id="move-generation">이동 생성</h2>
 
-<h3>Two-stage approach</h3>
+<h3>2단계 접근 방식</h3>
 <ol>
-  <li><b>Pseudo-legal move generation</b>
+  <li><b>의사 합법 수 생성</b>
     <ul>
-      <li>Generate all moves ignoring checks.</li>
-      <li>Include sliding moves, knight jumps, pawn pushes/captures, promotions.</li>
-      <li>Include special cases: castling and en passant (subject to rule checks).</li>
+      <li>체크 여부를 무시하고 가능한 모든 이동을 생성합니다.</li>
+      <li>슬라이딩 기물 이동, 나이트 점프, 폰 전진/캡처, 승격을 포함합니다.</li>
+      <li>특수 규칙: 캐슬링, 앙파상 포함 (조건 검사 필요).</li>
     </ul>
   </li>
-  <li><b>Legal filtering</b>
+  <li><b>합법 수 필터링</b>
     <ul>
-      <li>Apply move (make), test if own king is in check, undo move (unmake).</li>
-      <li>Reject moves that leave the king in check.</li>
+      <li>이동을 적용(make)한 뒤 킹이 체크 상태인지 검사하고, 이후 되돌립니다(unmake).</li>
+      <li>킹이 체크에 노출되는 수는 제거합니다.</li>
     </ul>
   </li>
 </ol>
 
-<h3>Implementation tips</h3>
+<h3>구현 팁</h3>
 <ul>
-  <li>Use incremental <i>make</i>/ <i>unmake</i> operations to avoid copying full board states.</li>
-  <li>Keep track of castling rights and en-passant square in the position state.</li>
-  <li>For sliding pieces, iterate along direction vectors and stop on first blocker.</li>
+  <li>전체 보드를 복사하지 말고 incremental make/unmake 방식을 사용합니다.</li>
+  <li>캐슬링 권리와 앙파상 칸을 Position 구조체에 포함시킵니다.</li>
+  <li>슬라이딩 기물은 방향 벡터를 따라 진행하며 첫 번째 차단 기물에서 중단합니다.</li>
 </ul>
 
 <hr>
 
-<h2 id="search-algorithm">Search Algorithm</h2>
+<h2 id="search-algorithm">탐색 알고리즘</h2>
 
-<h3>Core: Minimax with Alpha-Beta</h3>
-<p>Depth-limited minimax is the baseline. Alpha-Beta pruning reduces explored nodes significantly.</p>
+<h3>핵심: Alpha-Beta 기반 Minimax</h3>
+<p>깊이 제한 minimax가 기본이며, Alpha-Beta 가지치기를 통해 탐색 노드를 크게 줄입니다.</p>
 
-<h3>Search enhancements (recommended roadmap)</h3>
+<h3>탐색 개선 로드맵</h3>
 <ul>
-  <li>Iterative deepening (supports time control and move ordering)</li>
-  <li>Move ordering heuristics (captures first, MVV-LVA, killer moves)</li>
-  <li>Quiescence search (resolve horizon effect for captures)</li>
-  <li>Null-move pruning (aggressive pruning technique)</li>
-  <li>Transposition table (Zobrist hashing)</li>
+  <li>반복 심화 탐색</li>
+  <li>이동 정렬 휴리스틱 (캡처 우선, MVV-LVA, killer move 등)</li>
+  <li>퀘이슨스 탐색 (Horizon Effect 완화)</li>
+  <li>Null-move pruning</li>
+  <li>트랜스포지션 테이블 (Zobrist 해싱)</li>
 </ul>
 
 <hr>
 
-<h2 id="evaluation-function">Evaluation Function</h2>
+<h2 id="evaluation-function">평가 함수</h2>
 
-<h3>Material baseline</h3>
+<h3>기물 가치 기반</h3>
 <table>
-  <tr><th>Piece</th><th>Value</th></tr>
-  <tr><td>Pawn</td><td align="right">100</td></tr>
-  <tr><td>Knight</td><td align="right">320</td></tr>
-  <tr><td>Bishop</td><td align="right">334</td></tr>
-  <tr><td>Rook</td><td align="right">500</td></tr>
-  <tr><td>Queen</td><td align="right">900</td></tr>
-  <tr><td>King</td><td align="right">20000</td></tr>
+  <tr><th>기물</th><th>가치</th></tr>
+  <tr><td>폰</td><td align="right">100</td></tr>
+  <tr><td>나이트</td><td align="right">320</td></tr>
+  <tr><td>비숍</td><td align="right">334</td></tr>
+  <tr><td>룩</td><td align="right">500</td></tr>
+  <tr><td>퀸</td><td align="right">900</td></tr>
+  <tr><td>킹</td><td align="right">20000</td></tr>
 </table>
 
-<h3>Positional components (optional)</h3>
+<h3>위치적 요소 (선택)</h3>
 <ul>
-  <li>Piece-square tables</li>
-  <li>Pawn structure (isolated/doubled/backward pawns)</li>
-  <li>King safety (pawn shield, open files)</li>
-  <li>Mobility (number of legal moves)</li>
-  <li>Control of center</li>
+  <li>Piece-square 테이블</li>
+  <li>폰 구조 (고립폰, 이중폰 등)</li>
+  <li>킹 안전성</li>
+  <li>기동성</li>
+  <li>중앙 장악</li>
 </ul>
 
 <hr>
 
-<h2 id="engine-flow">Engine Flow & API (high-level)</h2>
+<h2 id="engine-flow">엔진 흐름 및 API (상위 수준)</h2>
 
-<h3>Suggested public-facing functions (module-level)</h3>
+<h3>권장 공개 함수 예시</h3>
+
 <details>
 <summary>Position / Board API</summary>
 <pre><code>void init_position(Position *pos);
@@ -136,7 +137,7 @@ void print_board(const Position *pos);
 </details>
 
 <details>
-<summary>Move generation API</summary>
+<summary>이동 생성 API</summary>
 <pre><code>int generate_moves(const Position *pos, MoveList *moves);
 void make_move(Position *pos, Move m);
 void unmake_move(Position *pos, Move m);
@@ -144,76 +145,74 @@ void unmake_move(Position *pos, Move m);
 </details>
 
 <details>
-<summary>Search API</summary>
+<summary>탐색 API</summary>
 <pre><code>Move search_best_move(Position *pos, int depth, SearchInfo *info);
 int alphabeta(Position *pos, int depth, int alpha, int beta, SearchInfo *info);
 </code></pre>
 </details>
 
 <details>
-<summary>Evaluation API</summary>
+<summary>평가 API</summary>
 <pre><code>int evaluate(const Position *pos);
 </code></pre>
 </details>
 
-<p>These are high-level prototypes. Adapt argument types to your codebase (e.g., MoveList, Position structs).</p>
-
 <hr>
 
-<h2 id="performance">Performance Considerations</h2>
+<h2 id="performance">성능 고려사항</h2>
 
 <ul>
-  <li>Avoid full board copies in tight loops—use incremental make/unmake.</li>
-  <li>Use transposition tables to reuse evaluated positions.</li>
-  <li>Implement fast move ordering to maximize alpha-beta prunes.</li>
-  <li>When optimizing heavily, consider switching to bitboards for move generation.</li>
-  <li>Profile hotspots (search, move generation, evaluation) and optimize the most expensive routines first.</li>
+  <li>탐색 루프에서 전체 보드 복사를 피합니다.</li>
+  <li>트랜스포지션 테이블을 활용합니다.</li>
+  <li>효율적인 이동 정렬을 구현합니다.</li>
+  <li>고도 최적화 시 비트보드를 고려합니다.</li>
+  <li>프로파일링 후 병목 지점을 우선 최적화합니다.</li>
 </ul>
 
 <hr>
 
-<h2 id="testing-debugging">Testing & Debugging</h2>
+<h2 id="testing-debugging">테스트 및 디버깅</h2>
 
-<h3>Unit tests to create</h3>
+<h3>작성 권장 테스트</h3>
 <ul>
-  <li>Per-piece move generation tests (e.g., knight moves in corner)</li>
-  <li>Special moves: castling rights, en passant, promotion</li>
-  <li>Check / checkmate / stalemate detection</li>
-  <li>Make/unmake consistency tests (apply then undo should restore state)</li>
-  <li>Static evaluation sanity checks on known positions</li>
+  <li>기물별 이동 생성 테스트</li>
+  <li>특수 규칙 테스트 (캐슬링, 앙파상, 승격)</li>
+  <li>체크/체크메이트/스테일메이트 판별</li>
+  <li>make/unmake 일관성 테스트</li>
+  <li>기준 포지션 평가 검증</li>
 </ul>
 
-<h3>Debugging tips</h3>
+<h3>디버깅 팁</h3>
 <ul>
-  <li>Print FEN and move list at each node when debugging search logic.</li>
-  <li>Use small fixed-depth searches to compare expected vs. engine moves.</li>
-  <li>Log Zobrist keys (if used) to validate transposition hits/misses.</li>
+  <li>노드별 FEN 및 이동 목록 출력</li>
+  <li>고정 깊이 탐색 비교</li>
+  <li>Zobrist 키 로그 출력</li>
 </ul>
 
 <hr>
 
-<h2 id="extensions">Extensions & Advanced Features</h2>
+<h2 id="extensions">확장 기능 및 고급 기능</h2>
 
 <details>
-<summary>UCI Protocol</summary>
-<p>Implementing UCI makes the engine compatible with GUIs (e.g., Arena, CuteChess). Key commands to support: <code>uci</code>, <code>isready</code>, <code>position</code>, <code>go</code>, <code>stop</code>, <code>quit</code>.</p>
+<summary>UCI 프로토콜</summary>
+<p>UCI를 구현하면 GUI와 연동할 수 있습니다. 주요 명령: uci, isready, position, go, stop, quit</p>
 </details>
 
 <details>
-<summary>Transposition Table & Zobrist</summary>
-<p>Use 64-bit Zobrist keys to hash positions. Store best move, depth, score, and node type (exact/lower/upper).</p>
+<summary>트랜스포지션 테이블 & Zobrist</summary>
+<p>64비트 Zobrist 키를 사용하여 포지션을 해싱합니다.</p>
 </details>
 
 <details>
-<summary>Quiescence Search</summary>
-<p>Extend search leaf nodes to evaluate capture sequences and avoid horizon effects.</p>
+<summary>퀘이슨스 탐색</summary>
+<p>캡처 수열을 확장 탐색하여 Horizon Effect를 방지합니다.</p>
 </details>
 
 <hr>
 
-<h2 id="examples">Examples & Pseudocode</h2>
+<h2 id="examples">예제 및 의사코드</h2>
 
-<h3>Alpha-Beta (negamax style)</h3>
+<h3>Alpha-Beta (negamax 스타일)</h3>
 <pre><code>int negamax(Position *pos, int depth, int alpha, int beta) {
   if (depth == 0) return evaluate(pos);
 
@@ -225,36 +224,37 @@ int alphabeta(Position *pos, int depth, int alpha, int beta, SearchInfo *info);
     int score = -negamax(pos, depth-1, -beta, -alpha);
     unmake_move(pos, move);
 
-    if (score >= beta) return beta;      // beta cutoff
-    if (score > alpha) alpha = score;    // best so far
+    if (score >= beta) return beta;
+    if (score > alpha) alpha = score;
   }
   return alpha;
 }
 </code></pre>
 
-<h3>Compile & Run (example)</h3>
+<h3>컴파일 및 실행 예시</h3>
 <pre><code>gcc -o chess main.c board.c move.c search.c evaluate.c
 ./chess
 </code></pre>
 
 <hr>
 
-<h2 id="glossary">Glossary</h2>
+<h2 id="glossary">용어 정리</h2>
 <ul>
-  <li><b>FEN:</b> Forsyth–Edwards Notation — string that describes a position.</li>
-  <li><b>Zobrist hashing:</b> Randomized hashing for unique position keys.</li>
-  <li><b>Quiescence:</b> Search extension to resolve volatile captures.</li>
-  <li><b>UCI:</b> Universal Chess Interface — protocol for engines and GUIs.</li>
+  <li><b>FEN:</b> 체스 포지션을 문자열로 표현하는 표기법</li>
+  <li><b>Zobrist 해싱:</b> 포지션 고유 키 생성을 위한 해시 기법</li>
+  <li><b>Quiescence:</b> 불안정한 캡처 상황을 해결하기 위한 확장 탐색</li>
+  <li><b>UCI:</b> 체스 엔진과 GUI 간 통신 프로토콜</li>
 </ul>
 
 <hr>
 
 <div align="center">
-  <p>If you want, I can next:
+  <p>
+    필요하다면 다음 단계로:
     <ul style="display:inline-block; text-align:left;">
-      <li>Generate a function-level API document matching your actual source files</li>
-      <li>Create UCI skeleton code to paste into main.c</li>
-      <li>Produce a printable PDF of this documentation</li>
+      <li>실제 소스 코드에 맞춘 함수 단위 API 문서 생성</li>
+      <li>main.c에 붙여넣을 수 있는 UCI 기본 코드 생성</li>
+      <li>출력 가능한 PDF 문서 제작</li>
     </ul>
   </p>
 </div>
