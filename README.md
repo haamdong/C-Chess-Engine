@@ -185,10 +185,8 @@ gcc -o chess main.c Board.c Engine.c
 C-Chess-Engine
 │
 ├── main.c
-├── board.c / board.h
-├── move.c / move.h
-├── search.c / search.h
-├── evaluate.c / evaluate.h
+├── Board.c / Board.h
+├── Engine.c / Engine.h
 └── README.md
 </pre>
 
