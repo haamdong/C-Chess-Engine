@@ -100,7 +100,7 @@ Alpha-Beta 가지치기가 적용된
 <h3>컴파일</h3>
 
 <pre>
-gcc -o chess main.c board.c move.c search.c evaluate.c
+gcc -o chess main.c Board.c Engine.c
 </pre>
 
 <h3>실행</h3>
