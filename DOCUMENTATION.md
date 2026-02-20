@@ -1,301 +1,347 @@
-<div align="center">
-  <h1>C-Chess-Engine — Documentation</h1>
-  <p> C-Chess-Engine 프로젝트를 위한 기술 문서입니다.  
-  본 문서는 아키텍처, 알고리즘, API(상위 수준), 테스트 방법을 설명합니다.</p>
-  <hr>
-</div>
+# 기술 문서 — C-Chess-Engine
 
-<h2 id="toc">목차</h2>
-<ul>
-  <li><a href="#overview">개요</a></li>
-  <li><a href="#board-representation">보드 표현</a></li>
-  <li><a href="#move-generation">이동 생성</a></li>
-  <li><a href="#search-algorithm">탐색 알고리즘</a></li>
-  <li><a href="#evaluation-function">평가 함수</a></li>
-  <li><a href="#engine-flow">엔진 흐름 및 API</a></li>
-  <li><a href="#performance">성능 고려사항</a></li>
-  <li><a href="#testing-debugging">테스트 및 디버깅</a></li>
-  <li><a href="#extensions">확장 기능 및 고급 기능</a></li>
-  <li><a href="#examples">예제 및 의사코드</a></li>
-  <li><a href="#glossary">용어 정리</a></li>
-</ul>
+> 구현 상세 및 기술 레퍼런스
 
-<hr>
+---
 
-<h2 id="overview">개요</h2>
-<p>
-본 문서는 C-Chess-Engine의 내부 설계와 예상 동작을 설명합니다.
-Board.c / Engine.c / main.c 파일과 매핑될 수 있도록 작성되었으며,
-리팩토링 시 명세서로도 활용할 수 있습니다.
-</p>
+## 목차
 
-<hr>
+- [소개](#소개)
+- [프로젝트 구조](#프로젝트-구조)
+- [보드 표현](#보드-표현)
+- [기물 인코딩](#기물-인코딩)
+- [이동 생성](#이동-생성)
+- [특수 수](#특수-수)
+- [체크 감지](#체크-감지)
+- [Minimax & 알파베타 가지치기](#minimax--알파베타-가지치기)
+- [무브 오더링](#무브-오더링)
+- [평가 함수](#평가-함수)
+- [위치 보너스 테이블](#위치-보너스-테이블-piece-square-table)
+- [킹 안전도](#킹-안전도)
+- [멀티스레딩](#멀티스레딩)
+- [게임 모드](#게임-모드)
+- [입력 형식](#입력-형식)
+- [함수 레퍼런스](#함수-레퍼런스)
+- [알려진 문제](#알려진-문제)
+- [향후 개선 계획](#향후-개선-계획)
 
-<h2 id="board-representation">보드 표현</h2>
+---
 
-<h3>권장 내부 모델</h3>
-<p>단순성 또는 성능 목표에 따라 다음 중 하나를 선택할 수 있습니다.</p>
-<ul>
-  <li><b>64칸 배열 (0..63):</b> 구현이 단순하며 기물 이동과 관련한 계산에 유리합니다.</li>
-  <li><b>8x8 2차원 배열:</b> 가독성이 좋고 직관적입니다.</li>
-  <li><b>비트보드:</b> 고급 방식으로, 비트 연산을 활용하여 매우 빠른 이동 생성을 지원합니다.</li>
-</ul>
+## 소개
 
-<h3>기물 인코딩 예시</h3>
-<p>작은 정수 값을 사용하며, enum을 통해 구분합니다.</p>
+C-Chess-Engine은 순수 C 언어로 작성된 고전 탐색 기반 체스 엔진입니다. 앙파상, 캐슬링, 폰 프로모션을 포함한 모든 표준 체스 규칙을 구현하며, 알파베타 가지치기, 무브 오더링, 재료 + 위치 평가 함수를 갖춘 Minimax 탐색 엔진을 포함합니다.
 
-<table>
-  <tr>
-    <th>코드</th>
-    <th>기물</th>
-  </tr>
+프로젝트는 세 개의 모듈로 분리됩니다:
+- `Board` — 규칙 및 이동 생성
+- `Engine` — 탐색 및 평가
+- `main` — 게임 루프 및 UI
 
-  <tr>
-    <td>0</td>
-    <td>빈 칸</td>
-  </tr>
+---
 
-  <tr>
-    <td>1</td>
-    <td>백 폰</td>
-  </tr>
-  <tr>
-    <td>2</td>
-    <td>백 나이트</td>
-  </tr>
-  <tr>
-    <td>3</td>
-    <td>백 비숍</td>
-  </tr>
-  <tr>
-    <td>4</td>
-    <td>백 룩</td>
-  </tr>
-  <tr>
-    <td>5</td>
-    <td>백 퀸</td>
-  </tr>
-  <tr>
-    <td>6</td>
-    <td>백 킹</td>
-  </tr>
+## 프로젝트 구조
 
-  <tr>
-    <td>7</td>
-    <td>흑 폰</td>
-  </tr>
-  <tr>
-    <td>8</td>
-    <td>흑 나이트</td>
-  </tr>
-  <tr>
-    <td>9</td>
-    <td>흑 비숍</td>
-  </tr>
-  <tr>
-    <td>10</td>
-    <td>흑 룩</td>
-  </tr>
-  <tr>
-    <td>11</td>
-    <td>흑 퀸</td>
-  </tr>
-  <tr>
-    <td>12</td>
-    <td>흑 킹</td>
-  </tr>
-</table>
+```
+C-Chess-Engine/
+├── main.c              # 게임 루프, 모드 선택, 입력 처리
+├── Board.c             # 보드 상태, 이동 생성, 규칙 처리
+├── Board.h
+├── Engine.c            # Minimax 탐색, 평가 함수, 무브 오더링
+├── Engine.h
+├── README.md
+└── DOCUMENTATION.md
+```
 
-<p>
-빈 칸은 0으로 정의하며,  
-백 기물은 1–6, 흑 기물은 7–12 범위를 사용합니다.
-</p>
+빌드:
+```bash
+gcc -O2 -o chess main.c Board.c Engine.c
+```
 
+---
 
-<hr>
+## 보드 표현
 
-<h2 id="move-generation">이동 생성</h2>
+보드는 `Board` 구조체 내 64개 정수 배열로 저장됩니다. 인덱스 0은 a1, 인덱스 63은 h8에 해당합니다.
 
-<h3>2단계 접근 방식</h3>
-<ol>
-  <li><b>의사 합법 수 생성</b>
-    <ul>
-      <li>체크 여부를 무시하고 가능한 모든 이동을 생성합니다.</li>
-      <li>슬라이딩 기물 이동, 나이트 점프, 폰 전진/캡처, 승격을 포함합니다.</li>
-      <li>특수 규칙: 캐슬링, 앙파상 포함 (조건 검사 필요).</li>
-    </ul>
-  </li>
-  <li><b>합법 수 필터링</b>
-    <ul>
-      <li>이동을 적용(make)한 뒤 킹이 체크 상태인지 검사하고, 체크 상태라면 이후 되돌립니다(unmake).</li>
-      <li>킹이 체크에 노출되는 수는 제거합니다.</li>
-    </ul>
-  </li>
-</ol>
+```c
+int rank  = index / 8;   // 0 = 1랭크, 7 = 8랭크
+int file  = index % 8;   // 0 = a파일, 7 = h파일
+int index = rank * 8 + file;
+```
 
-<hr>
+### 인덱스 배치
 
-<h2 id="search-algorithm">탐색 알고리즘</h2>
+```
+  [파일]  a   b   c   d   e   f   g   h
+  [랭크]
+    8    56, 57, 58, 59, 60, 61, 62, 63
+    7    48, 49, 50, 51, 52, 53, 54, 55
+    6    40, 41, 42, 43, 44, 45, 46, 47
+    5    32, 33, 34, 35, 36, 37, 38, 39
+    4    24, 25, 26, 27, 28, 29, 30, 31
+    3    16, 17, 18, 19, 20, 21, 22, 23
+    2     8,  9, 10, 11, 12, 13, 14, 15
+    1     0,  1,  2,  3,  4,  5,  6,  7
+```
 
-<h3>핵심: Alpha-Beta Pruning 기반 Minimax 알고리즘</h3>
-<p>깊이 제한 minimax가 기본이며, Alpha-Beta 가지치기를 통해 탐색 노드를 크게 줄입니다.</p>
-<p>이 코드에서는 5 또는 6의 depth를 사용하고 있습니다.</p>
+### Board 구조체
 
-<h3>탐색 개선 로드맵</h3>
-<ul>
-  <li>반복 심화 탐색</li>
-  <li>이동 정렬 휴리스틱 (캡처 우선, MVV-LVA, killer move 등)</li>
-  <li>퀘이슨스 탐색 (Horizon Effect 완화)</li>
-  <li>Null-move pruning</li>
-  <li>트랜스포지션 테이블 (Zobrist 해싱)</li>
-</ul>
+```c
+typedef struct Board {
+    int squares[64];  // 각 칸의 기물 (enum pieces)
+    int turn;         // 0 = 백, 1 = 흑
+    int castle[4];    // 캐슬링 권한: {W_KINGSIDE, W_QUEENSIDE, B_KINGSIDE, B_QUEENSIDE}
+    int en_passant;   // 앙파상 대상 칸 인덱스, 없으면 -1
+} Board;
+```
 
-<hr>
+---
 
-<h2 id="evaluation-function">평가 함수</h2>
+## 기물 인코딩
 
-<h3>기물 가치 기반</h3>
-<table>
-  <tr><th>기물</th><th>가치</th></tr>
-  <tr><td>폰</td><td align="right">100</td></tr>
-  <tr><td>나이트</td><td align="right">320</td></tr>
-  <tr><td>비숍</td><td align="right">334</td></tr>
-  <tr><td>룩</td><td align="right">500</td></tr>
-  <tr><td>퀸</td><td align="right">900</td></tr>
-  <tr><td>킹</td><td align="right">20000</td></tr>
-</table>
+| 열거형 | 정수값 | 기물 |
+|--------|--------|------|
+| `EMPTY` | 0 | 빈 칸 |
+| `W_PAWN` | 1 | 백 폰 |
+| `W_KNIGHT` | 2 | 백 나이트 |
+| `W_BISHOP` | 3 | 백 비숍 |
+| `W_ROOK` | 4 | 백 룩 |
+| `W_QUEEN` | 5 | 백 퀸 |
+| `W_KING` | 6 | 백 킹 |
+| `B_PAWN` | 7 | 흑 폰 |
+| `B_KNIGHT` | 8 | 흑 나이트 |
+| `B_BISHOP` | 9 | 흑 비숍 |
+| `B_ROOK` | 10 | 흑 룩 |
+| `B_QUEEN` | 11 | 흑 퀸 |
+| `B_KING` | 12 | 흑 킹 |
 
-<h3>위치적 요소 (선택)</h3>
-<ul>
-  <li>Piece-square 테이블</li>
-  <li>폰 구조 (고립폰, 이중폰 등)</li>
-  <li>킹 안전성</li>
-  <li>기동성</li>
-  <li>중앙 장악</li>
-</ul>
+`B_PAWN`(7) 미만이면 백, 이상이면 흑입니다. 흑 기물을 백 기물 유형으로 정규화할 때는 `type = piece - 6`을 사용합니다.
 
-<hr>
+---
 
-<h2 id="engine-flow">엔진 흐름 및 API</h2>
+## 이동 생성
 
-<h3>권장 공개 함수 예시</h3>
+이동 유효성 검사는 `is_valid_piece_move()`에서 기물별 함수에 위임합니다. 기물 이동 검사 후 `is_king_safe_after_move()`를 호출해 킹이 체크에 노출되는 이동을 필터링합니다.
 
-<details>
-<summary>Position / Board API</summary>
-<pre><code>void init_position(Position *pos);
-void load_fen(Position *pos, const char *fen);
-void print_board(const Position *pos);
-</code></pre>
-</details>
+### 방향 오프셋
 
-<details>
-<summary>이동 생성 API</summary>
-<pre><code>int generate_moves(const Position *pos, MoveList *moves);
-void make_move(Position *pos, Move m);
-void unmake_move(Position *pos, Move m);
-</code></pre>
-</details>
+```c
+int orthogonal_offsets[] = { 8, -8, 1, -1 };          // 위, 아래, 오른쪽, 왼쪽
+int diagonal_offsets[]   = { -9, -7, 7, 9 };           // 좌상, 우상, 좌하, 우하
+int knight_offsets[]     = { 15, 17, -15, -17, 6, 10, -6, -10 };
+int king_offsets[]       = { 1, -1, 7, -7, 8, -8, 9, -9 };
+int pawn_offsets[]       = { 7, 9 };                   // 대각선 캡처 오프셋
+```
 
-<details>
-<summary>탐색 API</summary>
-<pre><code>Move search_best_move(Position *pos, int depth, SearchInfo *info);
-int alphabeta(Position *pos, int depth, int alpha, int beta, SearchInfo *info);
-</code></pre>
-</details>
+> **래핑 방지:** 슬라이딩 기물 루프는 연속된 두 칸의 파일 거리를 확인해 H파일에서 A파일로 넘어가는 경우를 차단합니다.
 
-<details>
-<summary>평가 API</summary>
-<pre><code>int evaluate(const Position *pos);
-</code></pre>
-</details>
+---
 
-<hr>
+## 특수 수
 
-<h2 id="performance">성능 고려사항</h2>
+### 앙파상 (En Passant)
 
-<ul>
-  <li>탐색 루프에서 전체 보드 복사를 피합니다.</li>
-  <li>트랜스포지션 테이블을 활용합니다.</li>
-  <li>효율적인 이동 정렬을 구현합니다.</li>
-  <li>고도 최적화 시 비트보드를 고려합니다.</li>
-  <li>프로파일링 후 병목 지점을 우선 최적화합니다.</li>
-</ul>
+폰이 두 칸 전진하면 `is_valid_pawn_move()` 내부에서 `Board.en_passant`가 건너뛴 칸의 인덱스로 설정됩니다. 다음 턴에 상대 폰이 그 칸으로 이동하면 `main.c`에서 포획된 폰을 제거합니다. 두 칸 전진이 없었으면 매 턴 `-1`로 초기화됩니다.
 
-<hr>
+### 캐슬링
 
-<h2 id="testing-debugging">테스트 및 디버깅</h2>
+`move_castle()`에서 처리합니다. 다음 조건을 모두 검사합니다:
 
-<h3>작성 권장 테스트</h3>
-<ul>
-  <li>기물별 이동 생성 테스트</li>
-  <li>특수 규칙 테스트 (캐슬링, 앙파상, 승격)</li>
-  <li>체크/체크메이트/스테일메이트 판별</li>
-  <li>make/unmake 일관성 테스트</li>
-  <li>기준 포지션 평가 검증</li>
-</ul>
+- 킹이 현재 체크 상태가 아님
+- 캐슬링 권한이 존재함 (`Board.castle[]`)
+- 킹과 룩 사이의 모든 칸이 비어 있음
+- 킹이 통과하거나 도착하는 칸이 공격받지 않음
 
-<h3>디버깅 팁</h3>
-<ul>
-  <li>노드별 FEN 및 이동 목록 출력</li>
-  <li>고정 깊이 탐색 비교</li>
-  <li>Zobrist 키 로그 출력</li>
-</ul>
+캐슬링 권한은 킹 또는 룩이 이동하거나, 룩의 초기 위치가 캡처될 때 `update_castling_rights()`에서 취소됩니다.
 
-<hr>
+### 폰 프로모션
 
-<h2 id="extensions">확장 기능 및 고급 기능</h2>
+폰이 마지막 랭크에 도달하면 `main.c`에서 감지합니다. 플레이어에게 퀸, 룩, 나이트, 비숍 중 하나를 선택받아 교체합니다.
 
-<details>
-<summary>UCI 프로토콜</summary>
-<p>UCI를 구현하면 GUI와 연동할 수 있습니다. 주요 명령: uci, isready, position, go, stop, quit</p>
-</details>
+---
 
-<details>
-<summary>트랜스포지션 테이블 & Zobrist</summary>
-<p>64비트 Zobrist 키를 사용하여 포지션을 해싱합니다.</p>
-</details>
+## 체크 감지
 
-<details>
-<summary>퀘이슨스 탐색</summary>
-<p>캡처 수열을 확장 탐색하여 Horizon Effect를 방지합니다.</p>
-</details>
+`is_checked()`는 현재 플레이어의 킹을 찾고 다섯 개의 레이캐스트 함수를 호출합니다:
 
-<hr>
+| 함수 | 감지 대상 |
+|------|-----------|
+| `is_checked_on_straight_line()` | 랭크·파일 방향 룩/퀸 공격 |
+| `is_checked_on_diagonal()` | 대각선 방향 비숍/퀸 공격 |
+| `is_checked_by_pawn()` | 상대 폰의 대각선 공격 |
+| `is_checked_by_knight()` | 나이트 L자 공격 |
+| `is_checked_by_king()` | 인접한 상대 킹 |
 
-<h2 id="examples">예제 및 의사코드</h2>
+`is_king_safe_after_move()`는 보드 복사본에 가상의 이동을 적용하고 `is_checked()`를 호출합니다. 별도의 undo 로직이 필요 없습니다.
 
-<h3>Alpha-Beta (negamax 스타일)</h3>
-<pre><code>int negamax(Position *pos, int depth, int alpha, int beta) {
-  if (depth == 0) return evaluate(pos);
+---
 
-  MoveList moves;
-  generate_moves(pos, &moves);
+## Minimax & 알파베타 가지치기
 
-  for each move in moves {
-    make_move(pos, move);
-    int score = -negamax(pos, depth-1, -beta, -alpha);
-    unmake_move(pos, move);
+```c
+int minimax(Board b, int depth, int alpha, int beta, int is_maximizing);
+```
 
-    if (score >= beta) return beta;
-    if (score > alpha) alpha = score;
-  }
-  return alpha;
-}
-</code></pre>
+| 파라미터 | 설명 |
+|----------|------|
+| `b` | 현재 노드의 보드 복사본 (값으로 전달) |
+| `depth` | 남은 탐색 깊이 |
+| `alpha` | 최대화 플레이어가 보장할 수 있는 최선의 점수 |
+| `beta` | 최소화 플레이어가 보장할 수 있는 최선의 점수 |
+| `is_maximizing` | 1 = 최대화 (백), 0 = 최소화 (흑) |
 
-<h3>컴파일 및 실행 예시</h3>
-<pre><code>gcc -o chess main.c board.c move.c search.c evaluate.c
-./chess
-</code></pre>
+### 종료 조건
 
-<hr>
+- **체크메이트** → `±CHECKMATE_SCORE` 반환
+- **스테일메이트** → `0` 반환
+- **depth == 0** → `evaluate_board()` 반환
 
-<h2 id="glossary">용어 정리</h2>
-<ul>
-  <li><b>FEN:</b> 체스 포지션을 문자열로 표현하는 표기법</li>
-  <li><b>Zobrist 해싱:</b> 포지션 고유 키 생성을 위한 해시 기법</li>
-  <li><b>Quiescence:</b> 불안정한 캡처 상황을 해결하기 위한 확장 탐색</li>
-  <li><b>UCI:</b> 체스 엔진과 GUI 간 통신 프로토콜</li>
-</ul>
+> 백은 점수를 최대화하고, 흑은 최소화합니다. 평가 함수는 백 유리 시 양수, 흑 유리 시 음수를 반환합니다.
 
-<hr>
+---
+
+## 무브 오더링
+
+알파베타 가지치기는 좋은 수를 먼저 탐색할수록 효과적입니다. `collect_moves()`는 각 후보 수를 점수 매기고 정렬합니다:
+
+```c
+// MVV-LVA: 가장 가치 있는 피해자 - 가장 가치 없는 공격자
+score = piece_values[captured] - piece_values[attacker] + 10000;
+```
+
+- 캡처 수: 10000 이상 → 앞으로 정렬
+- 일반 이동: 0점
+- 캐슬링: 50점 고정 보너스
+
+---
+
+## 평가 함수
+
+`evaluate_board()`는 백 관점의 센티폰 점수를 반환합니다. 세 가지 요소를 합산합니다:
+
+| 요소 | 설명 |
+|------|------|
+| **재료 점수** | 보드 위 모든 기물의 가치 합산 |
+| **위치 보너스 테이블** | 기물 유형과 위치에 따른 보너스/패널티 |
+| **킹 안전도** | 폰 방패 보너스 + 캐슬링 권한 보너스 |
+
+---
+
+## 위치 보너스 테이블 (Piece-Square Table)
+
+각 기물 유형은 64개 요소의 보너스 테이블을 가집니다 (백 관점, 인덱스 0 = a1). 흑 기물에는 테이블이 반전 적용됩니다: `table[63 - i]`.
+
+| 기물 | 테이블 특징 |
+|------|-------------|
+| **폰** | 전진 및 중앙 점령에 보너스, 후방 폰에 패널티 |
+| **나이트** | 중앙에 강한 보너스, 가장자리에 큰 패널티 |
+| **비숍** | 가장자리 패널티 중심, 중앙 보너스는 소폭 |
+| **룩** | 7랭크에 보너스, 수동적 위치에 소폭 패널티 |
+| **퀸** | 조기 전개 억제 (가장자리 패널티), 중앙 소폭 보너스 |
+
+---
+
+## 킹 안전도
+
+```c
+int king_safety(Board* b, int king_sq, int color);
+```
+
+| 조건 | 점수 |
+|------|------|
+| 캐슬링 권한이 남아 있음 | +10 |
+| 킹 앞 3칸 방패 영역의 폰 각각 | +15 (폰당) |
+
+> 킹 안전도는 백에는 더하고 흑에는 빼서 평가 함수의 부호 규칙과 일치시킵니다.
+
+---
+
+## 멀티스레딩
+
+Windows 스레드 API를 사용하여 루트 이동들을 여러 스레드에 분배해 병렬 탐색합니다.
+
+```c
+// 스레드 생성 — 각 스레드가 루트 이동의 일부를 처리
+threads[t] = CreateThread(NULL, 0, search_thread, &data[t], 0, NULL);
+
+// 모든 스레드 완료 대기
+WaitForMultipleObjects(NUM_THREADS, threads, TRUE, INFINITE);
+```
+
+> **주의:** 루트 병렬 탐색에서는 알파베타 경계값이 스레드 간에 공유되지 않아 가지치기 효율이 낮아집니다. 권장 스레드 수는 물리적 CPU 코어 수와 동일하게 설정하세요.
+
+---
+
+## 게임 모드
+
+| 모드 | 설명 |
+|------|------|
+| **1. 플레이어 대 플레이어** | 두 플레이어가 번갈아 수를 입력하는 표준 2인 대국 |
+| **2. 플레이어 대 엔진** | 색상 선택 후 `MAX_DEPTH` 깊이로 엔진과 대결 |
+| **3. 분석 모드** | 엔진이 최선의 수를 제안, 적용 여부 선택 가능 |
+
+---
+
+## 입력 형식
+
+| 입력 | 의미 |
+|------|------|
+| `e2e4` | e2에서 e4로 기물 이동 |
+| `O-O` | 킹사이드 캐슬링 |
+| `O-O-O` | 퀸사이드 캐슬링 |
+
+대수 표기법은 `algebraic_to_idx()`에서 변환됩니다. `'a'~'h'`는 파일 0~7, `'1'~'8'`은 랭크 0~7에 매핑됩니다.
+
+---
+
+## 함수 레퍼런스
+
+### Board.h
+
+| 함수 | 설명 |
+|------|------|
+| `init_board(b)` | 표준 초기 배치 설정 |
+| `show_board(b)` | 유니코드 기물로 터미널 출력 |
+| `move_piece(b, start, end)` | 이동 유효성 검사; 합법적이면 1 반환 |
+| `move_castle(b, start, end)` | 합법적인 경우 캐슬링 실행 및 턴 전환 |
+| `is_checked(b)` | 현재 플레이어의 킹이 체크 상태이면 1 반환 |
+| `is_checkmate(b)` | 체크 상태이고 합법 수가 없으면 1 반환 |
+| `is_stalemate(b)` | 체크가 아닌데 합법 수가 없으면 1 반환 |
+| `update_castling_rights(b, start, end)` | 룩/킹 이동 또는 캡처 후 캐슬링 권한 취소 |
+| `pawn_promotion(b, sq)` | 사용자 입력을 받아 해당 칸의 폰을 승격 |
+| `is_king_safe_after_move(b, start, end)` | 가상 이동 후 킹이 안전하면 1 반환 |
+
+### Engine.h
+
+| 함수 | 설명 |
+|------|------|
+| `evaluate_board(b)` | 백 관점의 센티폰 점수 반환 |
+| `collect_moves(b, moves)` | 모든 합법 수를 우선순위 순으로 정렬하여 `ScoredMove[]`에 저장 |
+| `minimax(b, depth, alpha, beta, is_max)` | 알파베타 재귀 탐색; 평가 점수 반환 |
+| `find_best_move(b, depth)` | 현재 국면에서 최선의 `Move` 반환 |
+| `king_safety(b, king_sq, color)` | 킹 안전도 보너스 점수 반환 |
+
+---
+
+## 알려진 문제
+
+| 문제 | 상태 |
+|------|------|
+| Minimax 내부에서 캐슬링 적용 시 룩이 이동하지 않음 | ⚠️ 수정 중 |
+| 반복 수 감지 없음 — 엔진이 같은 수를 반복할 수 있음 | ⚠️ 예정 |
+| 퀴에이슨스 탐색 없음 — 전술적 수평선 효과 발생 | ⚠️ 예정 |
+| 스레드 간 알파베타 경계값 미공유 | 구조적 한계 |
+
+---
+
+## 향후 개선 계획
+
+| 기능 | 우선순위 |
+|------|----------|
+| Minimax 탐색 트리 내 캐슬링 적용 수정 | 🔴 높음 |
+| 퀴에이슨스 탐색 | 🔴 높음 |
+| 반복 심화 탐색 | 🟠 중간 |
+| 트랜스포지션 테이블 (Zobrist 해싱) | 🟠 중간 |
+| 반복 수 감지 및 패널티 | 🟡 낮음 |
+| UCI 프로토콜 지원 | 🟡 낮음 |
+| 오프닝 북 연동 | 🟡 낮음 |
+| 엔드게임 테이블베이스 | ⚪ 장기 |
