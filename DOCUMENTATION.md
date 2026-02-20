@@ -255,22 +255,6 @@ int king_safety(Board* b, int king_sq, int color);
 
 ---
 
-## 멀티스레딩
-
-Windows 스레드 API를 사용하여 루트 이동들을 여러 스레드에 분배해 병렬 탐색합니다.
-
-```c
-// 스레드 생성 — 각 스레드가 루트 이동의 일부를 처리
-threads[t] = CreateThread(NULL, 0, search_thread, &data[t], 0, NULL);
-
-// 모든 스레드 완료 대기
-WaitForMultipleObjects(NUM_THREADS, threads, TRUE, INFINITE);
-```
-
-> **주의:** 루트 병렬 탐색에서는 알파베타 경계값이 스레드 간에 공유되지 않아 가지치기 효율이 낮아집니다. 권장 스레드 수는 물리적 CPU 코어 수와 동일하게 설정하세요.
-
----
-
 ## 게임 모드
 
 | 모드 | 설명 |
